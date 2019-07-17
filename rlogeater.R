@@ -2,16 +2,6 @@ library("tidyverse")
 library("RJSONIO")
 library("rlist")
 
-# lflat <- function(l){
-#   ret <- unlist(l)
-#   return(ret)
-# }
-# 
-# ldf <- function(l){
-#   ret <- as.data.frame(l)
-#   return(ret)
-# }
-
 filename = "/Users/albertosantaballa/Dropbox/data/Elogs sample/ETOOWebApiLogv2.20190522.1.txt"
 
 json <- read_file(filename)
@@ -63,6 +53,7 @@ cookedBase <- flatList %>%  {
       , ThreadId = map(., "ThreadId")  
   )
 }
+
 
 #--
 
