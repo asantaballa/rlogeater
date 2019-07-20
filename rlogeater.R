@@ -5,31 +5,11 @@ library("dplyr")
 
 filename = "/Users/albertosantaballa/Dropbox/data/Elogs sample/ETOOWebApiLogv2.20190522.1.txt"
 
-json <- read_file(filename)
-json <- paste("[", json, "]")
-rawFromJson <- fromJSON(json)
-rm(json)
+jsontext <- read_file(filename)
+jsontext <- paste("[", jsontext, "]")
+rawFromJson <- fromJSON(jsontext)
+#rm(json)
 rawFromJson <- rawFromJson[-857]  # -- Remove null entry
-
-l2 <- unlist(rawFromJson, recursive = TRUE, use.names = TRUE)
-l2b <- unlist(rawFromJson[1], use.names = TRUE)
-d2b <- as.data.frame(l2b)
-# d2 <- as.data.frame(l2)
-
-l3 <- lapply(rawFromJson, unlist)
-#d3 <- as.data.frame(l3)
-
-l4 <- do.call(c, unlist(rawFromJson, recursive=FALSE))
-
-l5 <- unlist(rawFromJson, recursive = TRUE, use.names = TRUE)
-d5 <- do.call(rbind, lapply(rawFromJson, as.data.frame))
-
-l6 <- map(rawFromJson, flatten)
-
-# l7 <- lapply(rawFromJson, lflat)
-# l7.1 <- l7[1][[1]]
-# l7.2 <- l7[2][[1]]
-# l7b <- lapply(l7, ldf)
 
 flatList <- lapply(rawFromJson, unlist)
 
@@ -43,7 +23,7 @@ cookedBase <- flatList %>%  {
       , Opcode = map(., "Opcode")  
       , Task = map(., "Task")  
       , Version = map(., "Version")  
-      , Payload.correlationId = map(., "Payload.correlationId")  
+      , Payload.correlationId = as.character(map(., "Payload.correlationId"))  
       , Payload.requestInfo = map(., "Payload.requestInfo")  
       , Payload.responseInfo = map(., "Payload.responseInfo")  
       , Payload.headers = map(., "Payload.headers")  
@@ -57,43 +37,23 @@ cookedBase <- flatList %>%  {
 
 cookedBase <- as.data.frame((cookedBase))
 
-#--
-
-# n0 <- names(flatList[[1]])
-# n1 <- lapply(flatList, names)
-# n1u <- unlist(n1) 
-# n1uu <- unique(n1u)
-# n1uul <- as.list(n1uu)
-# #view(n1uu)
-# 
-# n2 <- flatList[[1]]
-# n2n <- names(n2)
-
 cookedBaseStarts <- filter(cookedBase, EventId == 3)
-cookedBaseStartsMutated <-
+cookedBaseStarts <-
   transmute(cookedBaseStarts
-            , Payload.correlationId = as.character(Payload.correlationId)
+            , Payload.correlationId = Payload.correlationId
             , Start.Payload.requestInfo = Payload.requestInfo
             , Start.Timestamp = Timestamp
   )
 
 cookedBaseOthers <- filter(cookedBase, EventId != 3)
-cookedBaseOthersMutated <-
-  transmute (cookedBaseStarts
-            , Payload.correlationId = as.character(Payload.correlationId)
+cookedBaseOthers <-
+  transmute (cookedBaseOthers
+            , Payload.correlationId = Payload.correlationId
             , End.Payload.responseInfo = Payload.responseInfo
             , End.Timestamp = Timestamp
             )
 
-cookedMerged <- cookedBaseStartsMutated
-inner_join(cookedMerged, cookedBaseOthersMutated)
-names(cookedBaseOthersMutated)
-view(cookedBaseOthersMutated)
-typeof(cookedBaseOthersMutated[[1]])
-typeof(cookedBaseOthersMutated[[1]][1])
-typeof(cookedBaseOthersMutated)
-typeof(cookedBase)
-x <- as.data.frame(cookedBase)
-typeof(x)
+cookedMerged <- cookedBaseStarts
+cookedMerged <-inner_join(cookedMerged, cookedBaseOthers)
 
 
