@@ -1,6 +1,7 @@
 library("tidyverse")
 library("RJSONIO")
 library("rlist")
+library("dplyr")
 
 filename = "/Users/albertosantaballa/Dropbox/data/Elogs sample/ETOOWebApiLogv2.20190522.1.txt"
 
@@ -54,15 +55,45 @@ cookedBase <- flatList %>%  {
   )
 }
 
+cookedBase <- as.data.frame((cookedBase))
 
 #--
 
-n0 <- names(flatList[[1]])
-n1 <- lapply(flatList, names)
-n1u <- unlist(n1) 
-n1uu <- unique(n1u)
-n1uul <- as.list(n1uu)
-#view(n1uu)
+# n0 <- names(flatList[[1]])
+# n1 <- lapply(flatList, names)
+# n1u <- unlist(n1) 
+# n1uu <- unique(n1u)
+# n1uul <- as.list(n1uu)
+# #view(n1uu)
+# 
+# n2 <- flatList[[1]]
+# n2n <- names(n2)
 
-n2 <- flatList[[1]]
-n2n <- names(n2)
+cookedBaseStarts <- filter(cookedBase, EventId == 3)
+cookedBaseStartsMutated <-
+  transmute(cookedBaseStarts
+            , Payload.correlationId = as.character(Payload.correlationId)
+            , Start.Payload.requestInfo = Payload.requestInfo
+            , Start.Timestamp = Timestamp
+  )
+
+cookedBaseOthers <- filter(cookedBase, EventId != 3)
+cookedBaseOthersMutated <-
+  transmute (cookedBaseStarts
+            , Payload.correlationId = as.character(Payload.correlationId)
+            , End.Payload.responseInfo = Payload.responseInfo
+            , End.Timestamp = Timestamp
+            )
+
+cookedMerged <- cookedBaseStartsMutated
+inner_join(cookedMerged, cookedBaseOthersMutated)
+names(cookedBaseOthersMutated)
+view(cookedBaseOthersMutated)
+typeof(cookedBaseOthersMutated[[1]])
+typeof(cookedBaseOthersMutated[[1]][1])
+typeof(cookedBaseOthersMutated)
+typeof(cookedBase)
+x <- as.data.frame(cookedBase)
+typeof(x)
+
+
