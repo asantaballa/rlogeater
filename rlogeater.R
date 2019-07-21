@@ -2,6 +2,9 @@ library("tidyverse")
 library("RJSONIO")
 library("rlist")
 library("dplyr")
+library("lubridate")
+
+op <- options(digits.secs=3)
 
 filename = "/Users/albertosantaballa/Dropbox/data/Elogs sample/ETOOWebApiLogv2.20190522.1.txt"
 
@@ -37,23 +40,23 @@ cookedBase <- flatList %>%  {
 
 cookedBase <- as.data.frame((cookedBase))
 
-cookedBaseStarts <- filter(cookedBase, EventId == 3)
-cookedBaseStarts <-
-  transmute(cookedBaseStarts
+cbStartsSelect <- filter(cookedBase, EventId == 3)
+cbStarts <-
+  transmute ( cbStartsSelect
             , Payload.correlationId = Payload.correlationId
             , Start.Payload.requestInfo = Payload.requestInfo
-            , Start.Timestamp = Timestamp
-  )
-
-cookedBaseOthers <- filter(cookedBase, EventId != 3)
-cookedBaseOthers <-
-  transmute (cookedBaseOthers
-            , Payload.correlationId = Payload.correlationId
-            , End.Payload.responseInfo = Payload.responseInfo
-            , End.Timestamp = Timestamp
+            , Start.Timestamp = ymd_hms(Timestamp)
             )
 
-cookedMerged <- cookedBaseStarts
-cookedMerged <-inner_join(cookedMerged, cookedBaseOthers)
+cbOthersSelect <- filter(cookedBase, EventId != 3)
+cbOthers <-
+  transmute ( cbOthersSelect
+            , Payload.correlationId = Payload.correlationId
+            , End.Payload.responseInfo = Payload.responseInfo
+            , End.Timestamp = ymd_hms(Timestamp)
+            )
+
+cbMerge <-mutate(inner_join(cbStarts, cbOthers), duration = difftime(End.Timestamp, Start.Timestamp))
+cb2 <- cbMerge[order(-cbMerge$duration),]
 
 
