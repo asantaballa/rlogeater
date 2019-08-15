@@ -3,6 +3,7 @@ library("RJSONIO")
 library("rlist")
 library("dplyr")
 library("lubridate")
+library("urltools")
 
 op <- options(digits.secs=3)
 
@@ -11,7 +12,7 @@ filename = "/Users/albertosantaballa/Dropbox/data/Elogs sample/ETOOWebApiLogv2.2
 jsontext <- read_file(filename)
 jsontext <- paste("[", jsontext, "]")
 rawFromJson <- fromJSON(jsontext)
-#rm(json)
+#rm(jsontext)
 rawFromJson <- rawFromJson[-857]  # -- Remove null entry
 
 flatList <- lapply(rawFromJson, unlist)
@@ -45,6 +46,9 @@ cbStarts <-
   transmute ( cbStartsSelect
             , Payload.correlationId = Payload.correlationId
             , Start.Payload.requestInfo = Payload.requestInfo
+            #, RequestParms = str_split(Start.Payload.requestInfo," ")
+            #, RequestParms_Command = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,1]
+            #, RequestParms_Url = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,2]
             , Start.Timestamp = ymd_hms(Timestamp)
             )
 
@@ -56,7 +60,36 @@ cbOthers <-
             , End.Timestamp = ymd_hms(Timestamp)
             )
 
-cbMerge <-mutate(inner_join(cbStarts, cbOthers), duration = difftime(End.Timestamp, Start.Timestamp))
-cb2 <- cbMerge[order(-cbMerge$duration),]
+cb <- mutate( inner_join(cbStarts, cbOthers)
+            , Duration = difftime(End.Timestamp, Start.Timestamp)
+            , RequestParms_Command = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,1]
+            , RequestParms_Url = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,2]
+            )
 
 
+cb2xxx <- cb[order(-cb$Duration),]
+cbe <-  mutate( cb
+              , DurHSecs = as.integer(Duration * 100)
+              )
+
+#cbx <- cbe %>% select(RequestParms)
+
+cbef <- filter(cbe, Duration > 1.0)
+
+ggplot(cbe, aes(x = DurHSecs)) + geom_bar()
+
+##
+
+x0 <- transmute(cb
+               , Payload.correlationId = Payload.correlationId
+               , Start.Payload.requestInfo = Start.Payload.requestInfo
+               )  
+x1 <- mutate(x0,
+             s = str_split(Start.Payload.requestInfo," ")
+             ) 
+x2 <- unlist(x1, recursive = FALSE)
+#x2s <- filter(x2, FALSE)
+#x2r <- relist(x2)
+x3 <- lapply(x1, unlist)
+#x4 <- mutate(x1, u = unlist(s))
+#view(x2)
