@@ -46,9 +46,6 @@ cbStarts <-
   transmute ( cbStartsSelect
             , Payload.correlationId = Payload.correlationId
             , Start.Payload.requestInfo = Payload.requestInfo
-            #, RequestParms = str_split(Start.Payload.requestInfo," ")
-            #, RequestParms_Command = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,1]
-            #, RequestParms_Url = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,2]
             , Start.Timestamp = ymd_hms(Timestamp)
             )
 
@@ -62,34 +59,19 @@ cbOthers <-
 
 cb <- mutate( inner_join(cbStarts, cbOthers)
             , Duration = difftime(End.Timestamp, Start.Timestamp)
+            , DurHSecs = as.integer(Duration * 100)
             , RequestParms_Command = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,1]
             , RequestParms_Url = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,2]
             )
 
+cbhigh <- cb[order(-cb$Duration),]
 
-cb2xxx <- cb[order(-cb$Duration),]
-cbe <-  mutate( cb
-              , DurHSecs = as.integer(Duration * 100)
-              )
+cbAvgByApi <- cb %>% 
+              group_by(RequestParms_Url) %>% 
+              summarize(durAvg = mean(Duration)) 
 
-#cbx <- cbe %>% select(RequestParms)
+cbef <- filter(cb, Duration > 1.0)
 
-cbef <- filter(cbe, Duration > 1.0)
+ggplot(cb, aes(x = DurHSecs)) + geom_bar()
 
-ggplot(cbe, aes(x = DurHSecs)) + geom_bar()
 
-##
-
-x0 <- transmute(cb
-               , Payload.correlationId = Payload.correlationId
-               , Start.Payload.requestInfo = Start.Payload.requestInfo
-               )  
-x1 <- mutate(x0,
-             s = str_split(Start.Payload.requestInfo," ")
-             ) 
-x2 <- unlist(x1, recursive = FALSE)
-#x2s <- filter(x2, FALSE)
-#x2r <- relist(x2)
-x3 <- lapply(x1, unlist)
-#x4 <- mutate(x1, u = unlist(s))
-#view(x2)
