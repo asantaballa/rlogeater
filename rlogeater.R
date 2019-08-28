@@ -58,20 +58,25 @@ cbOthers <-
             )
 
 cb <- mutate( inner_join(cbStarts, cbOthers)
-            , Duration = difftime(End.Timestamp, Start.Timestamp)
-            , DurHSecs = as.integer(Duration * 100)
+            , DurSec = as.numeric(difftime(End.Timestamp, Start.Timestamp))
+            , DurSec100th = as.integer(DurSec * 100)
+            , DurSec10th = as.integer(DurSec * 10)
             , RequestParms_Command = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,1]
             , RequestParms_Url = str_split(Start.Payload.requestInfo," ",simplify=TRUE)[,2]
-            )
+            , domain = urltools::domain(RequestParms_Url)
+            , path = urltools::path(RequestParms_Url)
+)
 
-cbhigh <- cb[order(-cb$Duration),]
+
+cbOrderHigh <- cb[order(-cb$ DurSec),]
 
 cbAvgByApi <- cb %>% 
               group_by(RequestParms_Url) %>% 
-              summarize(durAvg = mean(Duration)) 
+              summarize(durAvg = mean(DurSec)) 
 
-cbef <- filter(cb, Duration > 1.0)
+cbef <- filter(cb, DurSec > 1.0)
 
-ggplot(cb, aes(x = DurHSecs)) + geom_bar()
+#ggplot(cb, aes(x = DurSec100th)) + geom_bar()
+ggplot(cb, aes(path,  y=DurSec))  + geom_point() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 
